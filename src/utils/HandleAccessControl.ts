@@ -13,6 +13,50 @@ class HandleAccessControl {
     }
   }
 
+  async verifyCompanyOwnerRole(payload: Partial<User>, companyId: number): Promise<void> {
+    const { role, id } = payload;
+
+    if (role !== Role.CompanyOwner) {
+      throw new ForbiddenException('Acesso não autorizado.');
+    }
+
+    const company = await this.prisma.company.findUnique({
+      where: {
+        id: companyId,
+      },
+    });
+
+    if (company.ownerId !== id) {
+      throw new ForbiddenException('Acesso não autorizado.');
+    }
+  }
+
+  async verifyProductBelongsToCompanyOwner(
+    payload: Partial<User>,
+    productId: number,
+  ): Promise<void> {
+    const { role, id } = payload;
+
+    if (role !== Role.CompanyOwner) {
+      throw new ForbiddenException('Acesso não autorizado.');
+    }
+
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      include: { company: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Produto não encontrado.');
+    }
+
+    if (!product.company || product.company.ownerId !== id) {
+      throw new ForbiddenException(
+        'Acesso não autorizado. Você não é dono da empresa deste produto.',
+      );
+    }
+  }
+
   async verifyPermission(payload: Partial<User>, permission: string): Promise<void> {
     const { id } = payload;
 
