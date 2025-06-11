@@ -24,8 +24,34 @@ model User {
   updatedAt        DateTime          @updatedAt
   adminPermissions AdminPermission[]
   files            File[]
+  ownedCompanies   Company[]         @relation("CompanyOwner")
 
   @@map("users")
+}
+
+model Company {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+  owner     User      @relation("CompanyOwner", fields: [ownerId], references: [id])
+  ownerId   Int
+
+  @@map("companies")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?  @db.VarChar(200)
+  price       Decimal  @db.Decimal(10, 2)
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("products")
 }
 
 model AdminPermission {
@@ -64,6 +90,7 @@ enum Role {
   Master
   Admin
   User
+  CompanyOwner
 }
 
 enum Status {
